@@ -1,4 +1,11 @@
-// AI Study Notes Generator - Main Application Logic
+// NoteGenie - Main Application Logic
+
+// Initialize Firebase when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof initializeFirebase === 'function') {
+        initializeFirebase();
+    }
+});
 
 class StudyNotesApp {
     constructor() {
@@ -48,6 +55,9 @@ class StudyNotesApp {
         this.updateProjectSelect();
         this.showView('dashboard');
         this.updateCharCount();
+        
+        // Check if we should show a welcome message for auto-login
+        this.checkAutoLoginStatus();
     }
 
     // Initialize configuration settings
@@ -2947,8 +2957,17 @@ Please provide a helpful, educational response based on the note content. Be con
 
     // ===== Authentication System =====
     checkAuthentication() {
-        const token = localStorage.getItem('authToken');
-        const user = localStorage.getItem('currentUser');
+        // Check localStorage first (remember me)
+        let token = localStorage.getItem('authToken');
+        let user = localStorage.getItem('currentUser');
+        let storageType = 'localStorage';
+        
+        // If no localStorage data, check sessionStorage (temporary login)
+        if (!token || !user) {
+            token = sessionStorage.getItem('authToken');
+            user = sessionStorage.getItem('currentUser');
+            storageType = 'sessionStorage';
+        }
         
         if (token && user) {
             try {
@@ -2964,11 +2983,23 @@ Please provide a helpful, educational response based on the note content. Be con
                     this.loadUserData();
                 } else {
                     this.clearAuthData();
+                    console.log('Auth token expired, clearing stored data');
                 }
             } catch (e) {
                 console.error('Error parsing stored auth data:', e);
                 this.clearAuthData();
             }
+        }
+    }
+
+    checkAutoLoginStatus() {
+        // Check if user was auto-logged in and show appropriate message
+        const rememberMe = localStorage.getItem('rememberMe');
+        if (this.isAuthenticated && rememberMe === 'true' && this.currentUser) {
+            // Small delay to ensure UI is ready
+            setTimeout(() => {
+                this.showNotification(`Welcome back, ${this.currentUser.name}! You were automatically logged in.`, 'success');
+            }, 1000);
         }
     }
 
@@ -3001,6 +3032,13 @@ Please provide a helpful, educational response based on the note content. Be con
 
     showLoginModal() {
         document.getElementById('loginModal').classList.add('active');
+        document.getElementById('loginForm').reset();
+        
+        // Restore remember me checkbox state if user previously chose to remember
+        const rememberMe = localStorage.getItem('rememberMe');
+        if (rememberMe === 'true') {
+            document.getElementById('rememberMe').checked = true;
+        }
     }
 
     hideLoginModal() {
@@ -3048,13 +3086,19 @@ Please provide a helpful, educational response based on the note content. Be con
                 this.authToken = response.token;
                 this.isAuthenticated = true;
                 
-                // Store auth data
+                // Store auth data based on remember me preference
                 if (rememberMe) {
+                    // Store in localStorage for persistent login
                     localStorage.setItem('authToken', this.authToken);
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    localStorage.setItem('rememberMe', 'true');
+                    console.log('Login data saved to localStorage (remember me enabled)');
                 } else {
+                    // Store in sessionStorage for temporary login
                     sessionStorage.setItem('authToken', this.authToken);
                     sessionStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    localStorage.removeItem('rememberMe');
+                    console.log('Login data saved to sessionStorage (temporary login)');
                 }
                 
                 this.updateAuthUI();
@@ -3166,6 +3210,7 @@ Please provide a helpful, educational response based on the note content. Be con
         
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('rememberMe');
         sessionStorage.removeItem('authToken');
         sessionStorage.removeItem('currentUser');
         

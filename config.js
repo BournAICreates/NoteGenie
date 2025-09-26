@@ -1,5 +1,18 @@
-// Configuration file for AI Study Notes Generator
+// Configuration file for NoteGenie
 // SECURITY: API keys are managed per user account
+
+// Firebase Configuration
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDI8Iw-wC7rFoJ5lefaK9sPz3we05izqKM",
+    authDomain: "flowgenie-ee967.firebaseapp.com",
+    projectId: "flowgenie-ee967",
+    storageBucket: "flowgenie-ee967.firebasestorage.app",
+    messagingSenderId: "502614793101",
+    appId: "1:502614793101:web:dae7c8fe22f55e2d0a3bc4"
+};
+
+// App ID for Firestore collections
+const APP_ID = "notegenie";
 
 const CONFIG = {
     // Google Gemini API Configuration - User-specific keys
@@ -21,7 +34,7 @@ const CONFIG = {
     WARNING_CHARACTERS: 80000,
     
     // App Settings
-    APP_NAME: 'AI Study Notes Generator',
+    APP_NAME: 'NoteGenie',
     VERSION: '2.0.0'
 };
 
