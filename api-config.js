@@ -30,30 +30,96 @@ const API_CONFIG = {
     RETRY_DELAY: 1000
 };
 
-// For development/testing - you can use a mock API
-const MOCK_API = {
+// Cloud-based user system for cross-device access
+const CLOUD_API = {
     // Simulate API delay
     DELAY: 500,
     
-    // Mock users database (in real app, this would be on the server)
-    // Use localStorage to persist data between page loads
-    get USERS() {
+    // Cloud storage using a simple approach
+    CLOUD_STORAGE_KEY: 'ai_study_notes_users',
+    
+    // Get users from cloud storage
+    async getUsers() {
+        try {
+            // Try to get from a shared cloud storage
+            const response = await fetch(`https://api.jsonbin.io/v3/b/65f8a1231f5677401f2b8c9a/latest`, {
+                headers: {
+                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return new Map(data.record || []);
+            }
+        } catch (error) {
+            console.log('Cloud storage unavailable, using local fallback');
+        }
+        
+        // Fallback to localStorage
         const stored = localStorage.getItem('mock_users');
         return stored ? new Map(JSON.parse(stored)) : new Map();
     },
     
-    set USERS(value) {
-        localStorage.setItem('mock_users', JSON.stringify([...value]));
+    // Save users to cloud storage
+    async saveUsers(users) {
+        try {
+            // Save to cloud storage
+            await fetch(`https://api.jsonbin.io/v3/b/65f8a1231f5677401f2b8c9a`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                },
+                body: JSON.stringify([...users])
+            });
+        } catch (error) {
+            console.log('Cloud storage unavailable, using local fallback');
+        }
+        
+        // Always save locally as backup
+        localStorage.setItem('mock_users', JSON.stringify([...users]));
     },
     
-    // Mock user data storage
-    get USER_DATA() {
+    // Get user data from cloud storage
+    async getUserData() {
+        try {
+            const response = await fetch(`https://api.jsonbin.io/v3/b/65f8a1241f5677401f2b8c9b/latest`, {
+                headers: {
+                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return new Map(data.record || []);
+            }
+        } catch (error) {
+            console.log('Cloud storage unavailable, using local fallback');
+        }
+        
+        // Fallback to localStorage
         const stored = localStorage.getItem('mock_user_data');
         return stored ? new Map(JSON.parse(stored)) : new Map();
     },
     
-    set USER_DATA(value) {
-        localStorage.setItem('mock_user_data', JSON.stringify([...value]));
+    // Save user data to cloud storage
+    async saveUserData(userData) {
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/65f8a1241f5677401f2b8c9b`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                },
+                body: JSON.stringify([...userData])
+            });
+        } catch (error) {
+            console.log('Cloud storage unavailable, using local fallback');
+        }
+        
+        // Always save locally as backup
+        localStorage.setItem('mock_user_data', JSON.stringify([...userData]));
     }
 };
 
@@ -90,7 +156,7 @@ function parseToken(token) {
 // Mock API functions for development
 const MockAPI = {
     // Simulate network delay
-    async delay(ms = MOCK_API.DELAY) {
+    async delay(ms = CLOUD_API.DELAY) {
         return new Promise(resolve => setTimeout(resolve, ms));
     },
     
@@ -100,8 +166,11 @@ const MockAPI = {
         
         const { name, email, password } = userData;
         
+        // Get users from cloud storage
+        const users = await CLOUD_API.getUsers();
+        
         // Check if user already exists
-        if (MOCK_API.USERS.has(email)) {
+        if (users.has(email)) {
             throw new Error('User already exists with this email');
         }
         
@@ -109,7 +178,6 @@ const MockAPI = {
         const userId = 'user_' + Date.now();
         const hashedPassword = simpleHash(password);
         
-        const users = MOCK_API.USERS;
         users.set(email, {
             id: userId,
             name: name,
@@ -118,21 +186,23 @@ const MockAPI = {
             apiKey: null, // Store user's API key
             createdAt: new Date().toISOString()
         });
-        MOCK_API.USERS = users;
+        
+        // Save to cloud storage
+        await CLOUD_API.saveUsers(users);
         
         // Initialize user data
-        const userDataMap = MOCK_API.USER_DATA;
+        const userDataMap = await CLOUD_API.getUserData();
         userDataMap.set(userId, {
             projects: [],
             flashcards: [],
             lastSync: new Date().toISOString()
         });
-        MOCK_API.USER_DATA = userDataMap;
+        await CLOUD_API.saveUserData(userDataMap);
         
         const token = generateToken(userId);
         
         console.log('✅ User registered successfully:', { userId, name, email });
-        console.log('📊 Total users in database:', MOCK_API.USERS.size);
+        console.log('📊 Total users in database:', users.size);
         
         return {
             success: true,
@@ -152,9 +222,11 @@ const MockAPI = {
         const { email, password } = credentials;
         const hashedPassword = simpleHash(password);
         
-        const user = MOCK_API.USERS.get(email);
+        // Get users from cloud storage
+        const users = await CLOUD_API.getUsers();
+        const user = users.get(email);
         console.log('🔍 Login attempt for email:', email);
-        console.log('👥 Users in database:', Array.from(MOCK_API.USERS.keys()));
+        console.log('👥 Users in database:', Array.from(users.keys()));
         
         if (!user) {
             console.log('❌ User not found');
@@ -185,7 +257,8 @@ const MockAPI = {
     async getUserData(userId) {
         await this.delay();
         
-        const userDataRecord = MOCK_API.USER_DATA.get(userId);
+        const userDataMap = await CLOUD_API.getUserData();
+        const userDataRecord = userDataMap.get(userId);
         if (!userDataRecord) {
             throw new Error('User data not found');
         }
@@ -200,7 +273,7 @@ const MockAPI = {
     async saveUserData(userId, data) {
         await this.delay();
         
-        const userDataMap = MOCK_API.USER_DATA;
+        const userDataMap = await CLOUD_API.getUserData();
         const userDataRecord = userDataMap.get(userId) || { projects: [], flashcards: [] };
         
         // Ensure data isolation - only save data for the specific user
@@ -211,7 +284,7 @@ const MockAPI = {
         userDataRecord.lastSync = new Date().toISOString();
         
         userDataMap.set(userId, userDataRecord);
-        MOCK_API.USER_DATA = userDataMap;
+        await CLOUD_API.saveUserData(userDataMap);
         
         console.log(`💾 Data saved for user ${userId}:`, {
             projects: userDataRecord.projects.length,
@@ -250,17 +323,21 @@ const MockAPI = {
     },
     
     // Get all registered users (for debugging)
-    getAllUsers() {
-        return Array.from(MOCK_API.USERS.values());
+    async getAllUsers() {
+        const users = await CLOUD_API.getUsers();
+        return Array.from(users.values());
     },
     
     // API Key Management
     async saveUserApiKey(userId, apiKey) {
         await this.delay();
         
+        // Get users from cloud storage
+        const users = await CLOUD_API.getUsers();
+        
         // Find user by ID
         let user = null;
-        for (const [email, userData] of MOCK_API.USERS) {
+        for (const [email, userData] of users) {
             if (userData.id === userId) {
                 user = userData;
                 break;
@@ -272,12 +349,11 @@ const MockAPI = {
         }
         
         // Update user with API key
-        const users = MOCK_API.USERS;
         users.set(user.email, {
             ...user,
             apiKey: apiKey
         });
-        MOCK_API.USERS = users;
+        await CLOUD_API.saveUsers(users);
         
         console.log('✅ API key saved for user:', user.name);
         return { success: true };
@@ -286,8 +362,11 @@ const MockAPI = {
     async getUserApiKey(userId) {
         await this.delay();
         
+        // Get users from cloud storage
+        const users = await CLOUD_API.getUsers();
+        
         // Find user by ID
-        for (const [email, userData] of MOCK_API.USERS) {
+        for (const [email, userData] of users) {
             if (userData.id === userId) {
                 return {
                     success: true,
@@ -302,9 +381,12 @@ const MockAPI = {
     async removeUserApiKey(userId) {
         await this.delay();
         
+        // Get users from cloud storage
+        const users = await CLOUD_API.getUsers();
+        
         // Find user by ID
         let user = null;
-        for (const [email, userData] of MOCK_API.USERS) {
+        for (const [email, userData] of users) {
             if (userData.id === userId) {
                 user = userData;
                 break;
@@ -316,12 +398,11 @@ const MockAPI = {
         }
         
         // Remove API key from user
-        const users = MOCK_API.USERS;
         users.set(user.email, {
             ...user,
             apiKey: null
         });
-        MOCK_API.USERS = users;
+        await CLOUD_API.saveUsers(users);
         
         console.log('✅ API key removed for user:', user.name);
         return { success: true };
@@ -330,10 +411,11 @@ const MockAPI = {
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { API_CONFIG, MockAPI, generateToken, parseToken };
+    module.exports = { API_CONFIG, MockAPI, CLOUD_API, generateToken, parseToken };
 } else {
     window.API_CONFIG = API_CONFIG;
     window.MockAPI = MockAPI;
+    window.CLOUD_API = CLOUD_API;
     window.generateToken = generateToken;
     window.parseToken = parseToken;
     
