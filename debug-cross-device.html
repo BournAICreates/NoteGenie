@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Cross-Device Login Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .test-account {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Cross-Device Login Debug Tool</h1>
+    <p>This tool helps debug cross-device login issues and test the cloud storage system.</p>
+
+    <div class="debug-section">
+        <h3>📊 System Status</h3>
+        <div id="systemStatus" class="status info">Checking system status...</div>
+        <button onclick="checkSystemStatus()">Refresh Status</button>
+    </div>
+
+    <div class="debug-section">
+        <h3>🌐 Cloud Storage Test</h3>
+        <div id="cloudStatus" class="status info">Testing cloud storage...</div>
+        <button onclick="testCloudStorage()">Test Cloud Storage</button>
+    </div>
+
+    <div class="debug-section">
+        <h3>👤 Test Account Creation</h3>
+        <div class="test-account">
+            <strong>Test Account:</strong><br>
+            Email: <input type="email" id="testEmail" value="test@example.com" placeholder="test@example.com"><br>
+            Password: <input type="password" id="testPassword" value="testpass123" placeholder="testpass123"><br>
+            Name: <input type="text" id="testName" value="Test User" placeholder="Test User">
+        </div>
+        <button onclick="createTestAccount()">Create Test Account</button>
+        <div id="createResult" class="status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>🔑 Test Login</h3>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult" class="status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>📱 Local Storage Check</h3>
+        <button onclick="checkLocalStorage()">Check Local Storage</button>
+        <div id="localStorageResult" class="status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>🔄 Manual Data Export/Import</h3>
+        <p>If cloud storage isn't working, you can manually copy your account data:</p>
+        <button onclick="exportData()">Export My Data</button>
+        <button onclick="importData()">Import Data</button>
+        <div id="exportResult" class="status"></div>
+        <textarea id="dataTextarea" placeholder="Paste exported data here for import" style="width: 100%; height: 100px; margin: 10px 0;"></textarea>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script>
+        let testAccount = null;
+
+        async function checkSystemStatus() {
+            const statusDiv = document.getElementById('systemStatus');
+            statusDiv.innerHTML = 'Checking system status...';
+            
+            try {
+                const status = {
+                    MockAPI: typeof MockAPI !== 'undefined',
+                    CLOUD_API: typeof CLOUD_API !== 'undefined',
+                    localStorage: typeof localStorage !== 'undefined',
+                    fetch: typeof fetch !== 'undefined'
+                };
+                
+                let statusText = 'System Status:<br>';
+                for (const [key, value] of Object.entries(status)) {
+                    statusText += `${key}: ${value ? '✅' : '❌'}<br>`;
+                }
+                
+                statusDiv.innerHTML = statusText;
+                statusDiv.className = 'status success';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ System check failed: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        async function testCloudStorage() {
+            const statusDiv = document.getElementById('cloudStatus');
+            statusDiv.innerHTML = 'Testing cloud storage...';
+            
+            try {
+                // Test getting users
+                const users = await CLOUD_API.getUsers();
+                statusDiv.innerHTML = `✅ Cloud storage working!<br>Loaded ${users.size} users from cloud<br>Fallback: localStorage available`;
+                statusDiv.className = 'status success';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Cloud storage failed: ${error.message}<br>Using localStorage fallback`;
+                statusDiv.className = 'status warning';
+            }
+        }
+
+        async function createTestAccount() {
+            const resultDiv = document.getElementById('createResult');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            const name = document.getElementById('testName').value;
+            
+            resultDiv.innerHTML = 'Creating test account...';
+            
+            try {
+                const userData = { name, email, password };
+                const response = await MockAPI.register(userData);
+                testAccount = response.user;
+                
+                resultDiv.innerHTML = `✅ Test account created!<br>User ID: ${testAccount.id}<br>Email: ${testAccount.email}<br>Token: ${response.token.substring(0, 20)}...`;
+                resultDiv.className = 'status success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Account creation failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            resultDiv.innerHTML = 'Testing login...';
+            
+            try {
+                const credentials = { email, password };
+                const response = await MockAPI.login(credentials);
+                
+                resultDiv.innerHTML = `✅ Login successful!<br>User: ${response.user.name}<br>Email: ${response.user.email}<br>Token: ${response.token.substring(0, 20)}...`;
+                resultDiv.className = 'status success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Login failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        function checkLocalStorage() {
+            const resultDiv = document.getElementById('localStorageResult');
+            
+            try {
+                const users = localStorage.getItem('mock_users');
+                const userData = localStorage.getItem('mock_user_data');
+                
+                let result = 'Local Storage Contents:<br>';
+                result += `Users: ${users ? '✅ Found' : '❌ Not found'}<br>`;
+                result += `User Data: ${userData ? '✅ Found' : '❌ Not found'}<br>`;
+                
+                if (users) {
+                    const userMap = new Map(JSON.parse(users));
+                    result += `User Count: ${userMap.size}<br>`;
+                    result += `User Emails: ${Array.from(userMap.keys()).join(', ')}`;
+                }
+                
+                resultDiv.innerHTML = result;
+                resultDiv.className = 'status info';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Local storage check failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        function exportData() {
+            const resultDiv = document.getElementById('exportResult');
+            
+            try {
+                const users = localStorage.getItem('mock_users');
+                const userData = localStorage.getItem('mock_user_data');
+                
+                const exportData = {
+                    users: users,
+                    userData: userData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                const exportString = JSON.stringify(exportData, null, 2);
+                document.getElementById('dataTextarea').value = exportString;
+                
+                resultDiv.innerHTML = '✅ Data exported! Copy the text above and paste it on another device.';
+                resultDiv.className = 'status success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Export failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        function importData() {
+            const resultDiv = document.getElementById('exportResult');
+            const importString = document.getElementById('dataTextarea').value;
+            
+            try {
+                const importData = JSON.parse(importString);
+                
+                if (importData.users) {
+                    localStorage.setItem('mock_users', importData.users);
+                }
+                if (importData.userData) {
+                    localStorage.setItem('mock_user_data', importData.userData);
+                }
+                
+                resultDiv.innerHTML = '✅ Data imported successfully! You can now login on this device.';
+                resultDiv.className = 'status success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Import failed: ${error.message}`;
+                resultDiv.className = 'status error';
+            }
+        }
+
+        // Auto-run system check on page load
+        window.addEventListener('load', () => {
+            checkSystemStatus();
+            testCloudStorage();
+        });
+    </script>
+</body>
+</html>

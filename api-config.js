@@ -30,96 +30,157 @@ const API_CONFIG = {
     RETRY_DELAY: 1000
 };
 
-// Cloud-based user system for cross-device access
+// True cloud-based user system for cross-device access
 const CLOUD_API = {
     // Simulate API delay
-    DELAY: 500,
+    DELAY: 300,
     
-    // Cloud storage using a simple approach
-    CLOUD_STORAGE_KEY: 'ai_study_notes_users',
+    // Primary cloud storage - using a reliable service
+    CLOUD_BASE_URL: 'https://api.jsonbin.io/v3/b',
+    USERS_BIN_ID: '65f8a1231f5677401f2b8c9a',
+    DATA_BIN_ID: '65f8a1241f5677401f2b8c9b',
     
-    // Get users from cloud storage
+    // API key for cloud storage
+    API_KEY: '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ',
+    
+    // Get users from cloud storage - PRIMARY METHOD
     async getUsers() {
+        console.log('🌐 Loading users from cloud storage...');
+        
         try {
-            // Try to get from a shared cloud storage
-            const response = await fetch(`https://api.jsonbin.io/v3/b/65f8a1231f5677401f2b8c9a/latest`, {
+            const response = await fetch(`${this.CLOUD_BASE_URL}/${this.USERS_BIN_ID}/latest`, {
+                method: 'GET',
                 headers: {
-                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                    'X-Master-Key': this.API_KEY,
+                    'Content-Type': 'application/json'
                 }
             });
             
             if (response.ok) {
                 const data = await response.json();
-                return new Map(data.record || []);
+                const users = new Map(data.record || []);
+                console.log(`✅ Loaded ${users.size} users from cloud storage`);
+                
+                // Update localStorage as backup
+                localStorage.setItem('mock_users', JSON.stringify([...users]));
+                return users;
+            } else {
+                console.log(`❌ Cloud response not OK: ${response.status}`);
+                throw new Error(`Cloud storage error: ${response.status}`);
             }
         } catch (error) {
-            console.log('Cloud storage unavailable, using local fallback');
+            console.log('❌ Cloud storage failed:', error.message);
+            console.log('📱 Falling back to localStorage');
+            
+            // Fallback to localStorage
+            const stored = localStorage.getItem('mock_users');
+            return stored ? new Map(JSON.parse(stored)) : new Map();
         }
-        
-        // Fallback to localStorage
-        const stored = localStorage.getItem('mock_users');
-        return stored ? new Map(JSON.parse(stored)) : new Map();
     },
     
-    // Save users to cloud storage
+    // Save users to cloud storage - PRIMARY METHOD
     async saveUsers(users) {
+        console.log(`💾 Saving ${users.size} users to cloud storage...`);
+        
         try {
-            // Save to cloud storage
-            await fetch(`https://api.jsonbin.io/v3/b/65f8a1231f5677401f2b8c9a`, {
+            const response = await fetch(`${this.CLOUD_BASE_URL}/${this.USERS_BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                    'X-Master-Key': this.API_KEY
                 },
                 body: JSON.stringify([...users])
             });
+            
+            if (response.ok) {
+                console.log('✅ Successfully saved users to cloud storage');
+                
+                // Also save locally as backup
+                localStorage.setItem('mock_users', JSON.stringify([...users]));
+                console.log('💾 Saved to localStorage backup');
+                return true;
+            } else {
+                console.log(`❌ Cloud save failed: ${response.status}`);
+                throw new Error(`Cloud storage error: ${response.status}`);
+            }
         } catch (error) {
-            console.log('Cloud storage unavailable, using local fallback');
+            console.log('❌ Cloud storage save failed:', error.message);
+            console.log('💾 Saving to localStorage only');
+            
+            // Save locally as fallback
+            localStorage.setItem('mock_users', JSON.stringify([...users]));
+            return false;
         }
-        
-        // Always save locally as backup
-        localStorage.setItem('mock_users', JSON.stringify([...users]));
     },
     
-    // Get user data from cloud storage
+    // Get user data from cloud storage - PRIMARY METHOD
     async getUserData() {
+        console.log('🌐 Loading user data from cloud storage...');
+        
         try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/65f8a1241f5677401f2b8c9b/latest`, {
+            const response = await fetch(`${this.CLOUD_BASE_URL}/${this.DATA_BIN_ID}/latest`, {
+                method: 'GET',
                 headers: {
-                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                    'X-Master-Key': this.API_KEY,
+                    'Content-Type': 'application/json'
                 }
             });
             
             if (response.ok) {
                 const data = await response.json();
-                return new Map(data.record || []);
+                const userData = new Map(data.record || []);
+                console.log(`✅ Loaded user data from cloud storage`);
+                
+                // Update localStorage as backup
+                localStorage.setItem('mock_user_data', JSON.stringify([...userData]));
+                return userData;
+            } else {
+                console.log(`❌ Cloud data response not OK: ${response.status}`);
+                throw new Error(`Cloud storage error: ${response.status}`);
             }
         } catch (error) {
-            console.log('Cloud storage unavailable, using local fallback');
+            console.log('❌ Cloud data storage failed:', error.message);
+            console.log('📱 Falling back to localStorage for user data');
+            
+            // Fallback to localStorage
+            const stored = localStorage.getItem('mock_user_data');
+            return stored ? new Map(JSON.parse(stored)) : new Map();
         }
-        
-        // Fallback to localStorage
-        const stored = localStorage.getItem('mock_user_data');
-        return stored ? new Map(JSON.parse(stored)) : new Map();
     },
     
-    // Save user data to cloud storage
+    // Save user data to cloud storage - PRIMARY METHOD
     async saveUserData(userData) {
+        console.log(`💾 Saving user data to cloud storage...`);
+        
         try {
-            await fetch(`https://api.jsonbin.io/v3/b/65f8a1241f5677401f2b8c9b`, {
+            const response = await fetch(`${this.CLOUD_BASE_URL}/${this.DATA_BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': '$2a$10$8K1p/a0dL3Y7ZxE5vQ8w3e.9mN2pL6sR8tU1vW4xY7zA0bC3dE6fG9hI2jK5mN8pQ'
+                    'X-Master-Key': this.API_KEY
                 },
                 body: JSON.stringify([...userData])
             });
+            
+            if (response.ok) {
+                console.log('✅ Successfully saved user data to cloud storage');
+                
+                // Also save locally as backup
+                localStorage.setItem('mock_user_data', JSON.stringify([...userData]));
+                console.log('💾 Saved user data to localStorage backup');
+                return true;
+            } else {
+                console.log(`❌ Cloud data save failed: ${response.status}`);
+                throw new Error(`Cloud storage error: ${response.status}`);
+            }
         } catch (error) {
-            console.log('Cloud storage unavailable, using local fallback');
+            console.log('❌ Cloud data storage save failed:', error.message);
+            console.log('💾 Saving user data to localStorage only');
+            
+            // Save locally as fallback
+            localStorage.setItem('mock_user_data', JSON.stringify([...userData]));
+            return false;
         }
-        
-        // Always save locally as backup
-        localStorage.setItem('mock_user_data', JSON.stringify([...userData]));
     }
 };
 
