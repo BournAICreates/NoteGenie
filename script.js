@@ -1642,6 +1642,13 @@ Please analyze the following transcription and create well-structured study note
 - Include dates, names, locations, or other specific details
 - Note any formulas, equations, or technical specifications
 
+## Other
+- Include any additional relevant information that doesn't fit into the above categories
+- Capture supplementary details, examples, or context that supports the main topic
+- Note any related concepts, background information, or tangential but relevant points
+- Include any additional terminology, processes, or methodologies mentioned
+- Capture any other important information that should still be noted for comprehensive understanding
+
 ## Summary
 - Provide a concise 2-3 sentence summary of the main content
 - Highlight the most important takeaways
@@ -1652,6 +1659,7 @@ Guidelines:
 - Focus on information most useful for studying and review
 - Maintain academic tone and accuracy
 - If the content is very technical, preserve important technical details
+- The "Other" section should capture everything else that is still relevant and worth noting
 
 Transcription to analyze:
 ${text}`;
@@ -2317,6 +2325,7 @@ Requirements:
 - Use proper academic terminology
 - Make sure all flashcards are relevant to the same topic
 - Include any clubs, empires, or groups that are mentioned
+- In conclusion extract anything that might be important or featured on a quiz/test
 
 IMPORTANT: You must respond with ONLY a valid JSON array. Do not include any explanatory text before or after the JSON.
 

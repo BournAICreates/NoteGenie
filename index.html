@@ -9,40 +9,48 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h1><i class="fas fa-graduation-cap"></i> NoteGenie</h1>
+                </div>
+                <nav class="sidebar-nav">
+                    <button id="newProjectBtn" class="btn btn-primary sidebar-btn">
+                        <i class="fas fa-plus"></i> New Project
+                    </button>
+                    <button id="dashboardBtn" class="btn btn-secondary sidebar-btn">
+                        <i class="fas fa-th-large"></i> Dashboard
+                    </button>
+                    <button id="chatBtn" class="btn btn-secondary sidebar-btn">
+                        <i class="fas fa-comments"></i> Chat
+                    </button>
+                    <button id="flashcardsBtn" class="btn btn-secondary sidebar-btn">
+                        <i class="fas fa-layer-group"></i> Flashcards
+                    </button>
+                    <button id="calendarBtn" class="btn btn-secondary sidebar-btn">
+                        <i class="fas fa-calendar-alt"></i> Calendar
+                    </button>
+                </nav>
+            </div>
+        </aside>
+
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1><i class="fas fa-graduation-cap"></i> NoteGenie</h1>
-                <div class="header-actions">
-                    <button id="newProjectBtn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> New Project
+                <div class="user-actions">
+                    <span id="userWelcome" class="user-welcome" style="display: none;">
+                        Welcome, <span id="userName"></span>!
+                    </span>
+                    <button id="apiKeyBtn" class="btn btn-outline" style="display: none;">
+                        <i class="fas fa-key"></i> API Key
                     </button>
-                    <button id="dashboardBtn" class="btn btn-secondary">
-                        <i class="fas fa-th-large"></i> Dashboard
+                    <button id="loginBtn" class="btn btn-outline">
+                        <i class="fas fa-sign-in-alt"></i> Login
                     </button>
-                    <button id="chatBtn" class="btn btn-secondary">
-                        <i class="fas fa-comments"></i> Chat
+                    <button id="logoutBtn" class="btn btn-outline" style="display: none;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
-                    <button id="flashcardsBtn" class="btn btn-secondary">
-                        <i class="fas fa-layer-group"></i> Flashcards
-                    </button>
-                    <button id="calendarBtn" class="btn btn-secondary">
-                        <i class="fas fa-calendar-alt"></i> Calendar
-                    </button>
-                    <div class="user-actions">
-                        <span id="userWelcome" class="user-welcome" style="display: none;">
-                            Welcome, <span id="userName"></span>!
-                        </span>
-                        <button id="apiKeyBtn" class="btn btn-outline" style="display: none;">
-                            <i class="fas fa-key"></i> API Key
-                        </button>
-                        <button id="loginBtn" class="btn btn-outline">
-                            <i class="fas fa-sign-in-alt"></i> Login
-                        </button>
-                        <button id="logoutBtn" class="btn btn-outline" style="display: none;">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
                 </div>
             </div>
         </header>
@@ -65,13 +73,17 @@
                     <div class="input-section">
                         <h2>Transform Your Transcription</h2>
                         <div class="project-selector">
-                            <label for="projectSelect">Select Project:</label>
-                            <select id="projectSelect" class="form-control">
-                                <option value="">Choose a project...</option>
-                            </select>
-                            <button id="createProjectBtn" class="btn btn-outline">
-                                <i class="fas fa-plus"></i> Create New Project
-                            </button>
+                            <div class="project-dropdown-section">
+                                <label for="projectSelect">Select Project:</label>
+                                <select id="projectSelect" class="form-control">
+                                    <option value="">Choose a project...</option>
+                                </select>
+                            </div>
+                            <div class="project-create-section">
+                                <button id="createProjectBtn" class="btn btn-outline">
+                                    <i class="fas fa-plus"></i> Create New Project
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="transcription-input">
